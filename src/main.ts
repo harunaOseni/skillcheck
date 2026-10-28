@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { run } from "./run.js";
 import { Docs, loadOpenApi, loadCliTree, type Sources } from "./sources.js";
 import { terminalReport, markdownReport, jsonReport } from "./report.js";
+import { DEFAULT_MODEL } from "./ai.js";
 import { CHECKERS } from "./checkers/index.js";
 
 export const DEFAULT_OPENAPI = "https://raw.githubusercontent.com/resend/resend-openapi/main/resend.json";
@@ -30,13 +31,17 @@ Output:
   --only <a,b>          run only these checkers (${Object.keys(CHECKERS).join(", ")})
   --skip <a,b>          skip these checkers
   --config <file>       JSON {"ignore":[{checker,file,claim,reason}]} (default: ./skillcheck.config.json if present)
+  --ai                  also extract claims with OpenAI (needs OPENAI_API_KEY); checkers still decide
+  --ai-cache <dir>      cache for model responses (default: .skillcheck-cache, "none" to disable)
   --no-color
   -h, --help
+
+Env: OPENAI_API_KEY (for --ai), SKILLCHECK_AI_MODEL (default: ${DEFAULT_MODEL})
 
 Exit codes: 0 clean, 1 drift found, 2 usage/source error.
 `;
 
-export async function main(argv: string[], io = { out: (s: string) => console.log(s), err: (s: string) => console.error(s) }): Promise<number> {
+export async function main(argv: string[], io: { out: (s: string) => void; err: (s: string) => void; env?: NodeJS.ProcessEnv; fetch?: typeof fetch } = { out: (s: string) => console.log(s), err: (s: string) => console.error(s) }): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs({
@@ -45,7 +50,7 @@ export async function main(argv: string[], io = { out: (s: string) => console.lo
       options: {
         openapi: { type: "string" }, docs: { type: "string" }, "cli-repo": { type: "string" }, "cli-bin": { type: "string" }, "cli-tree": { type: "string" },
         json: { type: "boolean" }, report: { type: "string" }, "fail-on": { type: "string" }, strict: { type: "boolean" },
-        only: { type: "string" }, config: { type: "string" }, skip: { type: "string" }, "no-color": { type: "boolean" }, help: { type: "boolean", short: "h" },
+        ai: { type: "boolean" }, "ai-cache": { type: "string" }, only: { type: "string" }, config: { type: "string" }, skip: { type: "string" }, "no-color": { type: "boolean" }, help: { type: "boolean", short: "h" },
       },
     });
   } catch (e) {
@@ -60,6 +65,11 @@ export async function main(argv: string[], io = { out: (s: string) => console.lo
   const failOn = v["fail-on"] ?? "error";
   if (!["error", "warn", "never"].includes(failOn)) {
     io.err(`--fail-on must be error|warn|never`);
+    return 2;
+  }
+  const env = io.env ?? process.env;
+  if (v.ai && !env.OPENAI_API_KEY) {
+    io.err("skillcheck: --ai needs OPENAI_API_KEY");
     return 2;
   }
   const sources: Sources = {
@@ -78,7 +88,7 @@ export async function main(argv: string[], io = { out: (s: string) => console.lo
   try {
     const cfgPath = v.config ?? (existsSync("skillcheck.config.json") ? "skillcheck.config.json" : undefined);
     const cfg = cfgPath ? JSON.parse(await readFile(cfgPath, "utf8")) : {};
-    result = await run({ ignore: cfg.ignore, targets: parsed.positionals.length ? parsed.positionals : ["."], sources, only: list(v.only), skip: list(v.skip) });
+    result = await run({ ignore: cfg.ignore, targets: parsed.positionals.length ? parsed.positionals : ["."], sources, ai: v.ai ? { apiKey: env.OPENAI_API_KEY!, model: env.SKILLCHECK_AI_MODEL || DEFAULT_MODEL, cacheDir: v["ai-cache"] === "none" ? undefined : v["ai-cache"] ?? ".skillcheck-cache", fetch: io.fetch } : undefined, only: list(v.only), skip: list(v.skip) });
   } catch (e) {
     io.err(`skillcheck: ${(e as Error).message}`);
     return 2;

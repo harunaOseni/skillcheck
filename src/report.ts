@@ -6,12 +6,13 @@ const color = (n: number, s: string, on: boolean) => (on ? `\u001b[${n}m${s}\u00
 export function terminalReport(r: RunResult, useColor: boolean): string {
   const L: string[] = [];
   L.push(`skillcheck: ${r.files.length} files, ${r.claims.length} claims extracted`);
+  if (r.ai) L.push(`  ai            ${r.ai.model}: ${r.ai.regexClaims} regex claims + ${r.ai.aiOnly} found only by AI (${r.ai.rejected} of ${r.ai.proposed} model claims rejected, ${r.ai.cacheHits}/${r.ai.files} files cached)`);
   for (const c of r.results)
     L.push(`  ${c.checker.padEnd(13)} ${c.skipped ? `SKIPPED (${c.skipped})` : `${c.checked} checked, ${c.findings.length} finding(s)`}`);
   L.push("");
   for (const f of r.findings) {
     const sev = f.severity === "error" ? color(31, "error", useColor) : f.severity === "warn" ? color(33, "warn ", useColor) : "info ";
-    L.push(`${sev} ${f.file}:${f.line}  [${f.checker}]`);
+    L.push(`${sev} ${f.file}:${f.line}  [${f.checker}]${f.ai ? " [ai]" : ""}`);
     L.push(`      ${f.message}`);
     L.push(`      claim:    ${f.claim.length > 150 ? f.claim.slice(0, 147) + "..." : f.claim}`);
     L.push(`      expected: ${f.expected}`);
@@ -30,6 +31,7 @@ export function markdownReport(r: RunResult, generated = new Date().toISOString(
   const e = r.findings.filter((f) => f.severity === "error").length;
   const w = r.findings.filter((f) => f.severity === "warn").length;
   const L: string[] = ["# SkillCheck report", "", `Generated ${generated}. ${r.files.length} files, ${r.claims.length} claims extracted. **${e} error(s), ${w} warning(s).**${r.ignored.length ? ` ${r.ignored.length} finding(s) ignored via config.` : ""}`, ""];
+  if (r.ai) L.splice(L.length - 1, 0, `AI mode (${r.ai.model}): ${r.ai.regexClaims} regex claims, ${r.ai.aiOnly} found only by AI; ${r.ai.rejected} of ${r.ai.proposed} model claims rejected. Findings marked [ai] come from AI-only claims; every finding is still decided by the deterministic source lookup.`, "");
   L.push("| Checker | Claims checked | Findings | Status |", "|---|---|---|---|");
   for (const c of r.results) L.push(`| ${c.checker} | ${c.checked} | ${c.findings.length} | ${c.skipped ? `skipped: ${esc(c.skipped)}` : "ran"} |`);
   L.push("");
@@ -50,6 +52,7 @@ export function jsonReport(r: RunResult): string {
       checkers: r.results.map((c) => ({ checker: c.checker, checked: c.checked, findings: c.findings.length, skipped: c.skipped ?? null })),
       findings: r.findings,
       ignored: r.ignored.length,
+      ai: r.ai ?? null,
     },
     null,
     2,

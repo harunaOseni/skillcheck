@@ -5,6 +5,8 @@ interface Base {
   line: number;
   /** The source line (trimmed) the claim was extracted from. */
   text: string;
+  /** Set when the claim came from --ai extraction. */
+  ai?: true;
 }
 
 export interface RateLimitClaim extends Base {
@@ -65,6 +67,8 @@ export interface Finding {
   message: string;
   expected: string;
   source: string;
+  /** Set when the finding comes from a claim only the AI extractor found. */
+  ai?: true;
 }
 
 export interface CheckerResult {
