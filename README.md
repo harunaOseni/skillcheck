@@ -41,7 +41,6 @@ skillcheck [paths...] [--openapi <path|url>] [--docs <url|dir>]
 
 [`.github/workflows/skillcheck.yml`](.github/workflows/skillcheck.yml) runs on PRs touching `skills/**` and weekly (docs drift happens
 with no skills PR), checks out `resend-cli`, runs skillcheck with `--strict`, and publishes the report to the job summary and as an artifact.
-Replace `OWNER` in the install step once the repo is published.
 
 ## Tests
 

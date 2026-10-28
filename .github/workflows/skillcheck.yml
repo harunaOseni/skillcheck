@@ -36,7 +36,7 @@ jobs:
         run: npm install --no-audit --no-fund --ignore-scripts
 
       - name: Install skillcheck
-        run: npm install -g github:OWNER/skillcheck # TODO: replace OWNER (or `npm i -g skillcheck` once published)
+        run: npm install -g github:harunaOseni/skillcheck
 
       - name: Run skillcheck
         run: |
