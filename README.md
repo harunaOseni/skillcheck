@@ -1,46 +1,36 @@
 # SkillCheck
 
-A fact-checker for AI agent skill files (`SKILL.md` and `references/*`). It pulls out the concrete claims a skill makes and checks each one against the product's own public sources. By default no AI and no API keys are involved, so results are the same every run.
+## What SkillCheck does
 
-Built as a demo for Resend's [`resend/resend-skills`](https://github.com/resend/resend-skills).
+AI assistants follow "skill" files: short guides that tell them how to use a product. If a guide says something wrong, the assistant repeats the mistake. SkillCheck fact-checks the specific claims in those files against the product's own docs, API spec and command-line tool. Built as a demo for Resend's [`resend/resend-skills`](https://github.com/resend/resend-skills).
 
-## What it checks
+## How it works
 
-| Checker | Claims | Checked against |
+1. **Find the claims.** Pattern matching pulls out numbers, error names, API endpoints, commands and links. No AI, so results are the same every run.
+2. **Look each one up** in the official source.
+3. **Report** the file and line, and what the source says instead.
+
+| Check | What it looks at | Checked against |
 |---|---|---|
-| `rate-limits` | "N requests per second" | Resend docs |
-| `status-codes` | error names and their HTTP status | Resend docs and OpenAPI |
-| `endpoints` | `POST /emails`, curl calls, SDK calls | OpenAPI spec |
-| `cli` | `resend ...` commands and flags | the CLI's own command list |
-| `doc-links` | `resend.com/docs/...` links | `llms.txt` |
-
-## Run it
+| Rate limits | "N requests per second" | Resend docs |
+| Error codes | error names and HTTP statuses | Resend docs and API spec |
+| Endpoints | `POST /emails`, curl and SDK calls | OpenAPI spec |
+| CLI | `resend ...` commands and flags | the CLI's own command list |
+| Doc links | `resend.com/docs/...` links | the docs index (`llms.txt`) |
 
 ```bash
-npm install && npm run build        # Node >= 20
+npm install && npm run build
 node dist/cli.js path/to/resend-skills/skills --cli-repo path/to/resend-cli
 ```
 
-Exit code is `0` when clean and `1` when drift is found. It also writes `skillcheck-report.md` with file, line, claim, and expected value for every finding. A checker whose source can't be reached shows as `SKIPPED` instead of passing.
+A GitHub Action ([`skillcheck.yml`](.github/workflows/skillcheck.yml)) runs it on pull requests that touch skills, and weekly.
 
-## AI mode
+## What it found
 
-`--ai` (needs `OPENAI_API_KEY`; model from `SKILLCHECK_AI_MODEL`, default `gpt-4o-mini`) also asks a model to extract claims the regexes miss. The model only finds claims: each must quote the exact line it came from or it is dropped, and every finding still comes from the same docs/OpenAPI/CLI lookup. Findings from AI-only claims are tagged `[ai]`. Responses are cached in `.skillcheck-cache/`, so reruns are cheap and repeatable. On resend-skills it found 3 claims the regexes missed and no new findings. Without the flag nothing changes.
+It checked 872 claims in resend-skills and found 7 problems:
 
-## GitHub Action
+- **Wrong rate limit.** `SKILL.md:280` and `references/sending/overview.md:14` say 2 requests per second. The docs say 10. This matches [resend-skills#164](https://github.com/resend/resend-skills/issues/164), and a 2-line fix is in [`patches/resend-skills-issue-164.patch`](patches/resend-skills-issue-164.patch).
+- **Error names that don't exist.** `references/sending/best-practices.md:130-136` lists four names missing from the API docs: `authentication_error`, `authorization_error`, `unprocessable_entity` and `api_error`.
+- **Careers endpoint.** `GET /careers/{id}` isn't in the public API spec. The CLI really uses it, so this is probably a gap in the spec, not a mistake in the skill.
 
-[`.github/workflows/skillcheck.yml`](.github/workflows/skillcheck.yml) runs on PRs that touch `skills/**` and weekly, since docs can drift with no skills PR. It adds `--ai` only if the `OPENAI_API_KEY` secret exists.
-
-## Findings on resend-skills
-
-872 claims checked, 7 findings:
-
-- **Rate limit.** `SKILL.md:280` and `references/sending/overview.md:14` say 2 req/s. The docs say 10. This matches [resend-skills#164](https://github.com/resend/resend-skills/issues/164). A 2-line fix is in [`patches/resend-skills-issue-164.patch`](patches/resend-skills-issue-164.patch).
-- **Error codes.** The table in `references/sending/best-practices.md:130-136` uses four names that don't exist in the API docs: `authentication_error`, `authorization_error`, `unprocessable_entity`, `api_error`.
-- **Careers endpoint.** `GET /careers/{id}` isn't in the public OpenAPI spec. The CLI really calls it, so this is likely a spec gap, not a skill error.
-
-The CLI checker found nothing across 478 commands and flags.
-
-## Limits
-
-Extraction is pattern-based, so it checks names and numbers, not whether the prose is right. Endpoints missing from the public spec get flagged, and `skillcheck.config.json` can suppress known false positives.
+Every CLI command and docs link matched.
