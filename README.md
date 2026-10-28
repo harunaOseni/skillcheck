@@ -7,7 +7,7 @@ verifies each one deterministically (no LLM, no API keys, public data only).
 | Checker | Claims it extracts | Source of truth |
 |---|---|---|
 | `rate-limits` | "N req/s", "N requests per second" (on lines that mention rate/limit) | live docs `api-reference/rate-limit.md` (cross-ref `ai-onboarding.md`) |
-| `status-codes` | `| 429 | ...|` table rows, `- 429 - ...` bullets, `409 \`invalid_idempotent_request\`` | live docs `api-reference/errors.md` (error code -> status), OpenAPI response codes |
+| `status-codes` | `| 429 | ...|` table rows, `- 429 - ...` bullets, `409 `invalid_idempotent_request`` | live docs `api-reference/errors.md` (error code -> status), OpenAPI response codes |
 | `endpoints` | `POST /emails`, `GET /segments/:id/contacts`, `curl ... api.resend.com/...`, `resend.<resource>.<fn>(` | OpenAPI `resend.json` (path + method; `:id`/`<id>`/`{id}`/UUID normalised) |
 | `cli` | `resend ...` commands in code blocks / inline code, flag tables under `## domains create` headings, "Command Group" tables | `resend commands --json` (the CLI's own commander tree) |
 | `doc-links` | `https://resend.com/docs/...` links | `llms.txt` (falls back to fetching `<page>.md`) |
@@ -69,12 +69,12 @@ error skills/resend-cli/references/careers.md:33  [endpoints]
 error skills/resend/references/sending/best-practices.md:130  [status-codes]
       Error code `authentication_error` does not exist in the API error docs
       claim:    | 401 | `authentication_error` | Invalid API key | Check RESEND_API_KEY, don't retry |
-      expected: a code from api-reference/errors.md (did you mean `application_error`?)
+      expected: a code from api-reference/errors.md
       source:   https://resend.com/docs/api-reference/errors.md
 error skills/resend/references/sending/best-practices.md:131  [status-codes]
       Error code `authorization_error` does not exist in the API error docs
       claim:    | 403 | `authorization_error` | Domain not verified | Verify domain at resend.com/domains |
-      expected: a code from api-reference/errors.md (did you mean `application_error`?)
+      expected: a code from api-reference/errors.md
       source:   https://resend.com/docs/api-reference/errors.md
 error skills/resend/references/sending/best-practices.md:134  [status-codes]
       Error code `unprocessable_entity` does not exist in the API error docs
@@ -104,8 +104,8 @@ Interpretation:
 
 1. **Rate limit (real; matches [resend-skills#164](https://github.com/resend/resend-skills/issues/164)).** `skills/resend/SKILL.md:280` and
    `skills/resend/references/sending/overview.md:14` say 2 req/s; `api-reference/rate-limit.md` says "10 requests per second per team" and `ai-onboarding.md` also says 10.
-2. **Error-code table in `references/sending/best-practices.md:130-136` (real, new as far as I know).** `authentication_error`, `authorization_error`,
-   `unprocessable_entity`, `api_error` are not error names in the API errors docs (docs use e.g. `missing_api_key`/`restricted_api_key` for 401, `validation_error` for most 403/422 cases, `application_error` for 500).
+2. **Error-code table in `references/sending/best-practices.md:130-136` (real; I did not find an existing issue for it).** `authentication_error`, `authorization_error`,
+   `unprocessable_entity`, `api_error` are not error names in the API errors docs (docs use e.g. `missing_api_key`/`restricted_api_key` for 401, `validation_error` for 400/403 cases, `invalid_parameter`/`missing_required_field` for 422, `application_error` for 500).
    The rows that match docs (`validation_error`, `invalid_idempotency_key`, `invalid_idempotent_request`, `concurrent_idempotent_requests`, `rate_limit_exceeded`) pass.
 3. **`GET /careers/<id>` in `resend-cli/references/careers.md:33` - false positive / spec gap.** The CLI really calls `/careers/${jobId}`
    (`resend-cli/src/commands/careers/apply.ts`), but the public OpenAPI spec doesn't define it. The skill is probably right; the spec is incomplete.
