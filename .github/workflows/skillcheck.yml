@@ -38,14 +38,25 @@ jobs:
       - name: Install skillcheck
         run: npm install -g github:harunaOseni/skillcheck
 
+      # Optional: cached model responses make AI reruns cheap and repeatable
+      - uses: actions/cache@v4
+        with:
+          path: .skillcheck-cache
+          key: skillcheck-ai-${{ hashFiles('skills/**') }}
+          restore-keys: skillcheck-ai-
+
       - name: Run skillcheck
         run: |
+          # --ai only when the OPENAI_API_KEY secret exists (not set for fork PRs)
+          AI=""
+          if [ -n "$OPENAI_API_KEY" ]; then AI="--ai"; fi
           skillcheck skills \
             --cli-repo .skillcheck/resend-cli \
             --report skillcheck-report.md \
-            --strict
+            --strict $AI
         env:
           RESEND_TELEMETRY_DISABLED: "1"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Publish report to job summary
         if: always()
