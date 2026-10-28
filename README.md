@@ -27,7 +27,7 @@ Exit code is `0` when clean and `1` when drift is found. It also writes `skillch
 
 [`.github/workflows/skillcheck.yml`](.github/workflows/skillcheck.yml) runs on PRs that touch `skills/**` and weekly, since docs can drift with no skills PR.
 
-## Findings on resend-skills today
+## Findings on resend-skills
 
 872 claims checked, 7 findings:
 
