@@ -1,6 +1,6 @@
 # SkillCheck
 
-A fact-checker for AI agent skill files (`SKILL.md` and `references/*`). It pulls out the concrete claims a skill makes and checks each one against the product's own public sources. No AI and no API keys are involved, so results are the same every run.
+A fact-checker for AI agent skill files (`SKILL.md` and `references/*`). It pulls out the concrete claims a skill makes and checks each one against the product's own public sources. By default no AI and no API keys are involved, so results are the same every run.
 
 Built as a demo for Resend's [`resend/resend-skills`](https://github.com/resend/resend-skills).
 
@@ -23,9 +23,13 @@ node dist/cli.js path/to/resend-skills/skills --cli-repo path/to/resend-cli
 
 Exit code is `0` when clean and `1` when drift is found. It also writes `skillcheck-report.md` with file, line, claim, and expected value for every finding. A checker whose source can't be reached shows as `SKIPPED` instead of passing.
 
+## AI mode
+
+`--ai` (needs `OPENAI_API_KEY`; model from `SKILLCHECK_AI_MODEL`, default `gpt-4o-mini`) also asks a model to extract claims the regexes miss. The model only finds claims: each must quote the exact line it came from or it is dropped, and every finding still comes from the same docs/OpenAPI/CLI lookup. Findings from AI-only claims are tagged `[ai]`. Responses are cached in `.skillcheck-cache/`, so reruns are cheap and repeatable. Without the flag nothing changes.
+
 ## GitHub Action
 
-[`.github/workflows/skillcheck.yml`](.github/workflows/skillcheck.yml) runs on PRs that touch `skills/**` and weekly, since docs can drift with no skills PR.
+[`.github/workflows/skillcheck.yml`](.github/workflows/skillcheck.yml) runs on PRs that touch `skills/**` and weekly, since docs can drift with no skills PR. It adds `--ai` only if the `OPENAI_API_KEY` secret exists.
 
 ## Findings on resend-skills
 
