@@ -157,17 +157,15 @@ export function extractClaims(file: string, content: string): Claim[] {
       }
     }
 
-    // endpoints in prose / tables / inline code
-    if (!isRow || true) {
-      for (const m of text.matchAll(ENDPOINT_RE)) {
-        const p = normalizePath(m[2]);
-        if (p === "/" || p.length < 2) continue;
-        push({ kind: "endpoint", file, line: lineNo, text, method: m[1], path: p });
-      }
-      for (const m of text.matchAll(/`([^`]*\bresend\s[^`]*)`/g)) {
-        const cli = parseCliLine(m[1]);
-        if (cli) push({ kind: "cli_command", file, line: lineNo, text, tokens: cli });
-      }
+    // endpoints and `resend ...` commands in prose, tables and inline code
+    for (const m of text.matchAll(ENDPOINT_RE)) {
+      const p = normalizePath(m[2]);
+      if (p === "/" || p.length < 2) continue;
+      push({ kind: "endpoint", file, line: lineNo, text, method: m[1], path: p });
+    }
+    for (const m of text.matchAll(/`([^`]*\bresend\s[^`]*)`/g)) {
+      const cli = parseCliLine(m[1]);
+      if (cli) push({ kind: "cli_command", file, line: lineNo, text, tokens: cli });
     }
 
     // CLI flag tables under "## domains create" style headings
@@ -182,7 +180,7 @@ export function extractClaims(file: string, content: string): Claim[] {
       const cells = splitRow(text);
       const cmd = /^`([a-z][a-z -]*)`/.exec(cells[0] ?? "");
       if (cmd && cells[1]) {
-        let desc = cells[1].split(/\s+[—–]\s+/)[0].replace(/\([^)]*\)/g, "").trim();
+        const desc = cells[1].split(/\s+[—–]\s+/)[0].replace(/\([^)]*\)/g, "").trim();
         const items = desc.split(",").map((s) => s.trim());
         if (items.length >= 2 && items.every((s) => /^[a-z][a-z-]*$/.test(s)))
           push({ kind: "cli_group", file, line: lineNo, text, command: cmd[1].trim().split(/\s+/), subcommands: items });

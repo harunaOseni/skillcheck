@@ -88,13 +88,6 @@ export async function loadCliTree(opts: { tree?: string; repo?: string; bin?: st
   throw new Error("no CLI source given (--cli-tree, --cli-repo or --cli-bin)");
 }
 
-export interface Resolved {
-  node: CliNode;
-  /** options inherited from ancestors including node itself */
-  options: Set<string>;
-  path: string[];
-}
-
 export function childOf(node: CliNode, tok: string): CliNode | undefined {
   return node.subcommands.find((s) => s.name === tok || s.aliases.includes(tok));
 }
