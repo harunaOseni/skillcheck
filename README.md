@@ -7,7 +7,7 @@ verifies each one deterministically (no LLM, no API keys, public data only).
 | Checker | Claims it extracts | Source of truth |
 |---|---|---|
 | `rate-limits` | "N req/s", "N requests per second" (on lines that mention rate/limit) | live docs `api-reference/rate-limit.md` (cross-ref `ai-onboarding.md`) |
-| `status-codes` | `| 429 | ...|` table rows, `- 429 - ...` bullets, `409 `invalid_idempotent_request`` | live docs `api-reference/errors.md` (error code -> status), OpenAPI response codes |
+| `status-codes` | status-code table rows, `- 429 - ...` bullets, and a status next to a snake_case error code (e.g. 409 + `invalid_idempotent_request`) | live docs `api-reference/errors.md` (error code -> status), OpenAPI response codes |
 | `endpoints` | `POST /emails`, `GET /segments/:id/contacts`, `curl ... api.resend.com/...`, `resend.<resource>.<fn>(` | OpenAPI `resend.json` (path + method; `:id`/`<id>`/`{id}`/UUID normalised) |
 | `cli` | `resend ...` commands in code blocks / inline code, flag tables under `## domains create` headings, "Command Group" tables | `resend commands --json` (the CLI's own commander tree) |
 | `doc-links` | `https://resend.com/docs/...` links | `llms.txt` (falls back to fetching `<page>.md`) |
