@@ -1,0 +1,25 @@
+{
+  "name": "skillcheck",
+  "version": "0.1.0",
+  "description": "Lint agent skill files (SKILL.md + references) for factual drift against the OpenAPI spec, CLI help output, and live docs.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "skillcheck": "./dist/cli.js" },
+  "main": "./dist/index.js",
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepare": "npm run build"
+  },
+  "keywords": ["resend", "agent-skills", "lint", "openapi", "docs-drift"],
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

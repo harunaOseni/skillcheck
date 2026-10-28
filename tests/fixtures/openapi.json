@@ -1,0 +1,7 @@
+{"openapi":"3.1.0","paths":{
+ "/emails":{"post":{"responses":{"200":{}}},"get":{"responses":{"200":{}}}},
+ "/emails/{email_id}":{"get":{"responses":{"200":{}}}},
+ "/emails/{email_id}/cancel":{"post":{"responses":{"200":{}}}},
+ "/emails/batch":{"post":{"responses":{"200":{},"422":{}}}},
+ "/domains":{"post":{"responses":{"201":{}}},"get":{"responses":{"200":{}}}}
+}}

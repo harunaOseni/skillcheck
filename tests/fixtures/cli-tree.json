@@ -1,0 +1,10 @@
+{"name":"resend","aliases":[],"subcommands":[
+ {"name":"emails","aliases":[],"options":[],"subcommands":[
+   {"name":"send","aliases":[],"subcommands":[],"options":[{"long":"--from","takesValue":true},{"long":"--to","takesValue":true},{"long":"--subject","takesValue":true},{"long":"--text","takesValue":true}]}]},
+ {"name":"domains","aliases":[],"options":[],"subcommands":[
+   {"name":"create","aliases":[],"subcommands":[],"options":[{"long":"--name","takesValue":true},{"long":"--region","takesValue":true}]},
+   {"name":"verify","aliases":[],"subcommands":[],"options":[]},
+   {"name":"list","aliases":["ls"],"subcommands":[],"options":[{"long":"--limit","takesValue":true}]}]},
+ {"name":"usage","aliases":[],"subcommands":[],"options":[]},
+ {"name":"login","aliases":[],"subcommands":[],"options":[{"long":"--key","takesValue":true}]}
+],"options":[{"long":"--json"},{"long":"--quiet","short":"-q"},{"long":"--api-key","takesValue":true}]}

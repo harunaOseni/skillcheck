@@ -1,0 +1,4 @@
+# Resend
+- [Errors](https://resend.com/docs/api-reference/errors.md): Errors
+- [Usage Limits](https://resend.com/docs/api-reference/rate-limit.md): limits
+- [AI onboarding](https://resend.com/docs/ai-onboarding.md): onboarding

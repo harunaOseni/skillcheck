@@ -1,0 +1,58 @@
+name: skillcheck
+
+# Lint the skill files in this repo for factual drift against the OpenAPI spec,
+# the Resend CLI's real command tree, and the live docs.
+# Drop this file into resend/resend-skills (or any repo with skills/**/*.md).
+
+on:
+  pull_request:
+    paths: ["skills/**", ".github/workflows/skillcheck.yml"]
+  schedule:
+    - cron: "0 14 * * 1" # weekly: docs/OpenAPI drift happens without any skills PR
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  skillcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Source of truth: the CLI's command definitions (built from source)
+      - name: Checkout resend-cli
+        uses: actions/checkout@v4
+        with:
+          repository: resend/resend-cli
+          path: .skillcheck/resend-cli
+
+      - name: Install resend-cli deps
+        working-directory: .skillcheck/resend-cli
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Install skillcheck
+        run: npm install -g github:OWNER/skillcheck # TODO: replace OWNER (or `npm i -g skillcheck` once published)
+
+      - name: Run skillcheck
+        run: |
+          skillcheck skills \
+            --cli-repo .skillcheck/resend-cli \
+            --report skillcheck-report.md \
+            --strict
+        env:
+          RESEND_TELEMETRY_DISABLED: "1"
+
+      - name: Publish report to job summary
+        if: always()
+        run: cat skillcheck-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: skillcheck-report
+          path: skillcheck-report.md
