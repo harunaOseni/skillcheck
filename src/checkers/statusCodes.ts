@@ -70,5 +70,5 @@ function closest(code: string, errors: Map<string, unknown>): string {
     const d = lev(code, k);
     if (d < bd) { bd = d; best = k; }
   }
-  return best && bd <= Math.ceil(code.length / 3) ? ` (did you mean \`${best}\`?)` : "";
+  return best && bd <= 3 ? ` (did you mean \`${best}\`?)` : "";
 }

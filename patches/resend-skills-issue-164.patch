@@ -1,0 +1,39 @@
+From f92e12ee3263ef3a73b51e3e59e5d6603c0105cf Mon Sep 17 00:00:00 2001
+From: Haruna Oseni <noreply@users.noreply.github.com>
+Date: Tue, 27 Oct 2026 19:35:52 -0700
+Subject: [PATCH] fix: update default rate limit from 2 to 10 req/s (#164)
+
+---
+ skills/resend/SKILL.md                       | 2 +-
+ skills/resend/references/sending/overview.md | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/skills/resend/SKILL.md b/skills/resend/SKILL.md
+index de7381f..449ce8a 100644
+--- a/skills/resend/SKILL.md
++++ b/skills/resend/SKILL.md
+@@ -277,7 +277,7 @@ See [webhooks.md](references/webhooks.md) for full details, signature verificati
+ | 401 | Check API key — `restricted_api_key` means sending-only key used on non-sending endpoint |
+ | 403 | Verify domain ownership — common causes: `resend.dev` sandbox, `from` domain mismatch, unverified domain |
+ | 409 | Idempotency conflict — use new key or fix payload |
+-| 429 | Rate limited — retry with exponential backoff (default rate limit: 2 req/s) |
++| 429 | Rate limited — retry with exponential backoff (default rate limit: 10 req/s) |
+ | 500 | Server error — retry with exponential backoff |
+ 
+ ## Resources
+diff --git a/skills/resend/references/sending/overview.md b/skills/resend/references/sending/overview.md
+index 64e7609..62e1c2f 100644
+--- a/skills/resend/references/sending/overview.md
++++ b/skills/resend/references/sending/overview.md
+@@ -11,7 +11,7 @@ Resend provides two endpoints for sending emails:
+ 
+ **Choose batch when:**
+ - Sending 2+ distinct emails at once
+-- Reducing API calls is important (by default, rate limit is 2 requests per second)
++- Reducing API calls is important (by default, rate limit is 10 requests per second)
+ - No attachments or scheduling needed
+ 
+ **Choose single when:**
+-- 
+2.47.3
+
