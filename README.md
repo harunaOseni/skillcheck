@@ -25,7 +25,7 @@ Exit code is `0` when clean and `1` when drift is found. It also writes `skillch
 
 ## AI mode
 
-`--ai` (needs `OPENAI_API_KEY`; model from `SKILLCHECK_AI_MODEL`, default `gpt-4o-mini`) also asks a model to extract claims the regexes miss. The model only finds claims: each must quote the exact line it came from or it is dropped, and every finding still comes from the same docs/OpenAPI/CLI lookup. Findings from AI-only claims are tagged `[ai]`. Responses are cached in `.skillcheck-cache/`, so reruns are cheap and repeatable. Without the flag nothing changes.
+`--ai` (needs `OPENAI_API_KEY`; model from `SKILLCHECK_AI_MODEL`, default `gpt-4o-mini`) also asks a model to extract claims the regexes miss. The model only finds claims: each must quote the exact line it came from or it is dropped, and every finding still comes from the same docs/OpenAPI/CLI lookup. Findings from AI-only claims are tagged `[ai]`. Responses are cached in `.skillcheck-cache/`, so reruns are cheap and repeatable. On resend-skills it found 3 claims the regexes missed and no new findings. Without the flag nothing changes.
 
 ## GitHub Action
 
