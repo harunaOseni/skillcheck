@@ -11,7 +11,7 @@ import type { Claim } from "./types.js";
  */
 
 export const DEFAULT_MODEL = "gpt-4o-mini";
-const PROMPT_VERSION = "v1";
+const PROMPT_VERSION = "v2";
 const CHUNK_LINES = 150;
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -37,6 +37,9 @@ export interface AiStats {
   rejected: number;
   /** claims that survived validation */
   accepted: number;
+  /** token usage reported by the API for uncached calls */
+  promptTokens: number;
+  completionTokens: number;
 }
 
 export const SYSTEM_PROMPT = `You extract checkable factual claims about the Resend API, CLI and docs from agent-skill markdown.
@@ -47,6 +50,7 @@ Each claim has: kind, line (the number shown), quote (an EXACT verbatim substrin
 - endpoint: method (GET/POST/PUT/PATCH/DELETE) and path (as written, e.g. /emails/{id}) of a Resend API endpoint, including curl calls to api.resend.com.
 - cli_command: command = the full \`resend ...\` invocation exactly as written on that line, with its flags.
 - doc_link: url = a resend.com/docs URL.
+Only claims about the Resend API itself count: ignore routes, handlers and HTTP responses of the reader's own app (e.g. Express/Next.js webhook receivers, \`res.status(400)\`), and SDK method calls.
 Rules: only claims the text asserts or shows on that line; never infer, correct, or invent; never judge whether a claim is right; copy values exactly as written. Unused fields must be null (arrays: []). If nothing qualifies, return {"claims":[]}.`;
 
 const KINDS = ["rate_limit", "status", "endpoint", "cli_command", "doc_link"] as const;
@@ -155,12 +159,15 @@ function ground(file: string, lines: string[], r: RawClaim | undefined): Claim |
     }
     case "status": {
       if (!r.statuses.length || r.statuses.some((s) => s < 100 || s > 599 || !new RegExp(`(?<!\\d)${s}(?!\\d)`).test(raw))) return undefined;
+      if (/\bstatus\s*[:(]\s*\d{3}|\.status\(\d{3}\)|statusCode/.test(raw)) return undefined; // the reader's own app responding, not a Resend claim
       if (r.error_codes.some((e) => !/^[a-z]+(?:_[a-z]+)+$/.test(e) || !raw.includes(e))) return undefined;
       return { ...base, kind: "status", statuses: r.statuses, errorCodes: r.error_codes };
     }
     case "endpoint": {
       const method = r.method?.toUpperCase();
       if (!method || !["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method) || !r.path || !r.path.startsWith("/") || !raw.includes(r.path)) return undefined;
+      // must be a Resend API call (api.resend.com) or a literal "METHOD /path", not the reader's own routes like app.post('/x')
+      if (!/api\.resend\.com/.test(raw) && !new RegExp(`\\b${method}\\s+${r.path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(raw)) return undefined;
       const p = normalizePath(r.path);
       if (p === "/" || p.length < 2) return undefined;
       return { ...base, kind: "endpoint", method, path: p };
@@ -224,7 +231,7 @@ function redact(msg: string, key: string): string {
   return m.slice(0, 300);
 }
 
-async function callModel(chunk: string, o: AiOptions): Promise<unknown[]> {
+async function callModel(chunk: string, o: AiOptions, stats?: AiStats): Promise<unknown[]> {
   const f = o.fetch ?? fetch;
   const retries = o.retries ?? 3;
   let lastErr = "";
@@ -259,6 +266,10 @@ async function callModel(chunk: string, o: AiOptions): Promise<unknown[]> {
     const body: any = await res.json().catch(() => undefined);
     if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}: ${redact(String(body?.error?.message ?? "request rejected"), o.apiKey)} (model: ${o.model})`);
     const choice = body?.choices?.[0];
+    if (stats) {
+      stats.promptTokens += Number(body?.usage?.prompt_tokens) || 0;
+      stats.completionTokens += Number(body?.usage?.completion_tokens) || 0;
+    }
     if (choice?.finish_reason === "length") throw new Error("OpenAI response was truncated; skill chunk produced too many claims");
     try {
       const parsed = JSON.parse(choice?.message?.content ?? "");
@@ -288,7 +299,7 @@ async function rawClaimsFor(content: string, o: AiOptions, stats: AiStats): Prom
     }
   }
   const raw: unknown[] = [];
-  for (const ch of chunkLines(content)) raw.push(...(await callModel(ch.text, o)));
+  for (const ch of chunkLines(content)) raw.push(...(await callModel(ch.text, o, stats)));
   if (file) {
     await mkdir(o.cacheDir!, { recursive: true });
     await writeFile(file, JSON.stringify(raw, null, 1));
@@ -298,7 +309,7 @@ async function rawClaimsFor(content: string, o: AiOptions, stats: AiStats): Prom
 
 /** Extract grounded claims from each file with bounded concurrency. Output order follows input order. */
 export async function aiExtract(files: { file: string; content: string }[], o: AiOptions): Promise<{ claims: Claim[]; stats: AiStats }> {
-  const stats: AiStats = { model: o.model, files: files.length, cacheHits: 0, proposed: 0, rejected: 0, accepted: 0 };
+  const stats: AiStats = { model: o.model, files: files.length, cacheHits: 0, proposed: 0, rejected: 0, accepted: 0, promptTokens: 0, completionTokens: 0 };
   const per: Claim[][] = files.map(() => []);
   let next = 0;
   const worker = async () => {

@@ -66,6 +66,17 @@ describe("ai extraction", () => {
     expect(claims[0]).toMatchObject({ perSecond: 2, text: "The default rate limit is 2 calls per second." });
   });
 
+  it("drops the reader's own app routes and responses (not Resend claims)", () => {
+    const md = "app.post('/webhooks/resend', (req, res) => {\nreturn new Response('x', { status: 400 });\nPOST https://api.resend.com/webhooks\n";
+    const q = (line: number, quote: string, o: object) => ({ ...blank, line, quote, ...o });
+    const { claims } = groundClaims("a.md", md, [
+      q(1, "app.post('/webhooks/resend'", { kind: "endpoint", method: "POST", path: "/webhooks/resend" }),
+      q(2, "{ status: 400 }", { kind: "status", statuses: [400] }),
+      q(3, "POST https://api.resend.com/webhooks", { kind: "endpoint", method: "POST", path: "/webhooks" }),
+    ]);
+    expect(claims.map((c) => `${c.kind}@${c.line}`)).toEqual(["endpoint@3"]);
+  });
+
   it("merges with regex claims, deduping by file+line+kind+value", () => {
     const regex = extractClaims("a.md", MD);
     const ai = groundClaims("a.md", MD, modelClaims).claims;

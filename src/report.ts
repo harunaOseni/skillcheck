@@ -6,7 +6,7 @@ const color = (n: number, s: string, on: boolean) => (on ? `\u001b[${n}m${s}\u00
 export function terminalReport(r: RunResult, useColor: boolean): string {
   const L: string[] = [];
   L.push(`skillcheck: ${r.files.length} files, ${r.claims.length} claims extracted`);
-  if (r.ai) L.push(`  ai            ${r.ai.model}: ${r.ai.regexClaims} regex claims + ${r.ai.aiOnly} found only by AI (${r.ai.rejected} of ${r.ai.proposed} model claims rejected, ${r.ai.cacheHits}/${r.ai.files} files cached)`);
+  if (r.ai) L.push(`  ai            ${r.ai.model}: ${r.ai.regexClaims} regex claims + ${r.ai.aiOnly} found only by AI (${r.ai.rejected} of ${r.ai.proposed} model claims rejected, ${r.ai.cacheHits}/${r.ai.files} files cached; ${r.ai.promptTokens}+${r.ai.completionTokens} tokens)`);
   for (const c of r.results)
     L.push(`  ${c.checker.padEnd(13)} ${c.skipped ? `SKIPPED (${c.skipped})` : `${c.checked} checked, ${c.findings.length} finding(s)`}`);
   L.push("");
